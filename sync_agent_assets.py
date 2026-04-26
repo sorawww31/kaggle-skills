@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 
@@ -174,11 +175,57 @@ def _skill_adapters(root: Path) -> dict[Path, bytes]:
     return outputs
 
 
+def _mcp_adapters(root: Path) -> dict[Path, bytes]:
+    """Generate MCP server configs for each agent from .mcp.json (with auth)."""
+    source = root / ".mcp.json"
+    if not source.exists():
+        return {}
+    data = json.loads(_read_text(source))
+    servers = data.get("mcpServers", {})
+    if not servers:
+        return {}
+
+    outputs: dict[Path, bytes] = {}
+
+    # Cursor: url + headers
+    cursor_servers = {}
+    for name, config in servers.items():
+        cfg: dict = {}
+        if "url" in config:
+            cfg["url"] = config["url"]
+        if "headers" in config:
+            cfg["headers"] = config["headers"]
+        if cfg:
+            cursor_servers[name] = cfg
+    if cursor_servers:
+        outputs[root / ".cursor" / "mcp.json"] = _to_bytes(
+            json.dumps({"mcpServers": cursor_servers}, indent=2) + "\n"
+        )
+
+    # Gemini CLI: httpUrl + headers
+    gemini_servers = {}
+    for name, config in servers.items():
+        cfg = {}
+        if "url" in config:
+            cfg["httpUrl"] = config["url"]
+        if "headers" in config:
+            cfg["headers"] = config["headers"]
+        if cfg:
+            gemini_servers[name] = cfg
+    if gemini_servers:
+        outputs[root / ".gemini" / "settings.json"] = _to_bytes(
+            json.dumps({"mcpServers": gemini_servers}, indent=2) + "\n"
+        )
+
+    return outputs
+
+
 def render_files(root: Path) -> dict[Path, bytes]:
     outputs: dict[Path, bytes] = {}
     outputs.update(_agent_instruction_adapters(root))
     outputs.update(_command_adapters(root))
     outputs.update(_skill_adapters(root))
+    outputs.update(_mcp_adapters(root))
     return outputs
 
 

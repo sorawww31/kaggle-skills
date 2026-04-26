@@ -69,10 +69,10 @@ def _toml_multiline(value: str) -> str:
     return f'"""\n{escaped.rstrip()}\n"""'
 
 
-def _agent_instruction_adapters(root: Path) -> dict[Path, bytes]:
-    body = _strip_leading_html_comment(_read_text(root / "AGENTS.md"))
+def _agent_instruction_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
+    body = _strip_leading_html_comment(_read_text(source_root / "AGENTS.md"))
     return {
-        root / "CLAUDE.md": _to_bytes(
+        output_root / "CLAUDE.md": _to_bytes(
             _markdown_header(
                 "CLAUDE.md",
                 "Claude Code project memory mirrored from AGENTS.md.",
@@ -80,7 +80,7 @@ def _agent_instruction_adapters(root: Path) -> dict[Path, bytes]:
             )
             + body
         ),
-        root / "GEMINI.md": _to_bytes(
+        output_root / "GEMINI.md": _to_bytes(
             _markdown_header(
                 "GEMINI.md",
                 "Gemini CLI project context mirrored from AGENTS.md.",
@@ -88,7 +88,7 @@ def _agent_instruction_adapters(root: Path) -> dict[Path, bytes]:
             )
             + body
         ),
-        root / ".github" / "copilot-instructions.md": _to_bytes(
+        output_root / ".github" / "copilot-instructions.md": _to_bytes(
             _markdown_header(
                 ".github/copilot-instructions.md",
                 "GitHub Copilot repository instructions mirrored from AGENTS.md.",
@@ -96,7 +96,7 @@ def _agent_instruction_adapters(root: Path) -> dict[Path, bytes]:
             )
             + body
         ),
-        root / ".cursor" / "rules" / "project-guidelines.mdc": _to_bytes(
+        output_root / ".cursor" / "rules" / "project-guidelines.mdc": _to_bytes(
             "---\n"
             "description: Shared project instructions mirrored from AGENTS.md.\n"
             "globs:\n"
@@ -116,15 +116,15 @@ def _command_body(source: Path) -> str:
     return _strip_leading_html_comment(_read_text(source))
 
 
-def _command_adapters(root: Path) -> dict[Path, bytes]:
+def _command_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
     outputs: dict[Path, bytes] = {}
-    source_dir = root / ".agents" / "commands"
+    source_dir = source_root / ".agents" / "commands"
     for source in sorted(source_dir.glob("*.md")):
         name = source.stem
         body = _command_body(source)
         description = f"Shared repository command: {name}"
 
-        outputs[root / ".claude" / "commands" / f"{name}.md"] = _to_bytes(
+        outputs[output_root / ".claude" / "commands" / f"{name}.md"] = _to_bytes(
             _markdown_header(
                 f".claude/commands/{name}.md",
                 f"Claude Code command adapter for .agents/commands/{name}.md.",
@@ -133,7 +133,7 @@ def _command_adapters(root: Path) -> dict[Path, bytes]:
             + body
             + "\nUser arguments from Claude Code, if any:\n$ARGUMENTS\n"
         )
-        outputs[root / ".cursor" / "commands" / f"{name}.md"] = _to_bytes(
+        outputs[output_root / ".cursor" / "commands" / f"{name}.md"] = _to_bytes(
             _markdown_header(
                 f".cursor/commands/{name}.md",
                 f"Cursor command adapter for .agents/commands/{name}.md.",
@@ -142,7 +142,7 @@ def _command_adapters(root: Path) -> dict[Path, bytes]:
             + body
             + "\nIf text is provided after the command name, treat it as the command scope.\n"
         )
-        outputs[root / ".github" / "prompts" / f"{name}.prompt.md"] = _to_bytes(
+        outputs[output_root / ".github" / "prompts" / f"{name}.prompt.md"] = _to_bytes(
             _markdown_header(
                 f".github/prompts/{name}.prompt.md",
                 f"GitHub Copilot prompt adapter for .agents/commands/{name}.md.",
@@ -152,7 +152,7 @@ def _command_adapters(root: Path) -> dict[Path, bytes]:
             + "\nUse selected files, chat context, and any prompt arguments as scope.\n"
         )
         gemini_prompt = body + "\nUser arguments from Gemini CLI, if any:\n{{args}}\n"
-        outputs[root / ".gemini" / "commands" / f"{name}.toml"] = _to_bytes(
+        outputs[output_root / ".gemini" / "commands" / f"{name}.toml"] = _to_bytes(
             f"# .gemini/commands/{name}.toml\n"
             "# Where: generated Gemini CLI command adapter.\n"
             f"# What: Gemini command adapter for .agents/commands/{name}.md.\n"
@@ -164,20 +164,20 @@ def _command_adapters(root: Path) -> dict[Path, bytes]:
     return outputs
 
 
-def _skill_adapters(root: Path) -> dict[Path, bytes]:
+def _skill_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
     outputs: dict[Path, bytes] = {}
-    source_root = root / ".agents" / "skills"
-    for skill_md in sorted(source_root.glob("*/SKILL.md")):
+    source_skills_root = source_root / ".agents" / "skills"
+    for skill_md in sorted(source_skills_root.glob("*/SKILL.md")):
         skill_name = skill_md.parent.name
-        outputs[root / ".claude" / "skills" / skill_name / "SKILL.md"] = (
+        outputs[output_root / ".claude" / "skills" / skill_name / "SKILL.md"] = (
             skill_md.read_bytes()
         )
     return outputs
 
 
-def _mcp_adapters(root: Path) -> dict[Path, bytes]:
+def _mcp_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
     """Generate MCP server configs for each agent from .mcp.json (with auth)."""
-    source = root / ".mcp.json"
+    source = source_root / ".mcp.json"
     if not source.exists():
         return {}
     data = json.loads(_read_text(source))
@@ -200,10 +200,10 @@ def _mcp_adapters(root: Path) -> dict[Path, bytes]:
         if cfg:
             cursor_servers[name] = cfg
     if cursor_servers:
-        outputs[root / ".cursor" / "mcp.json"] = _to_bytes(
+        outputs[output_root / ".cursor" / "mcp.json"] = _to_bytes(
             json.dumps({"mcpServers": cursor_servers}, indent=2) + "\n"
         )
-        outputs[root / ".vscode" / "mcp.json"] = _to_bytes(
+        outputs[output_root / ".vscode" / "mcp.json"] = _to_bytes(
             json.dumps(
                 {
                     "servers": {
@@ -246,21 +246,21 @@ def _mcp_adapters(root: Path) -> dict[Path, bytes]:
         if cfg:
             gemini_servers[name] = cfg
     if gemini_servers:
-        outputs[root / ".gemini" / "settings.json"] = _to_bytes(
+        outputs[output_root / ".gemini" / "settings.json"] = _to_bytes(
             json.dumps({"mcpServers": gemini_servers}, indent=2) + "\n"
         )
 
     return outputs
 
 
-def render_files(root: Path, *, include_mcp: bool = False, skills_only: bool = False) -> dict[Path, bytes]:
+def render_files(source_root: Path, output_root: Path, *, include_mcp: bool = False, skills_only: bool = False) -> dict[Path, bytes]:
     outputs: dict[Path, bytes] = {}
     if not skills_only:
-        outputs.update(_agent_instruction_adapters(root))
-    outputs.update(_command_adapters(root))
-    outputs.update(_skill_adapters(root))
+        outputs.update(_agent_instruction_adapters(source_root, output_root))
+    outputs.update(_command_adapters(source_root, output_root))
+    outputs.update(_skill_adapters(source_root, output_root))
     if include_mcp:
-        outputs.update(_mcp_adapters(root))
+        outputs.update(_mcp_adapters(source_root, output_root))
     return outputs
 
 
@@ -294,10 +294,10 @@ def _remove_empty_generated_parents(root: Path, path: Path) -> None:
         return
 
 
-def write_files(root: Path, *, prune: bool = False, include_mcp: bool = False, skills_only: bool = False) -> tuple[list[Path], list[Path]]:
+def write_files(source_root: Path, output_root: Path, *, prune: bool = False, include_mcp: bool = False, skills_only: bool = False) -> tuple[list[Path], list[Path]]:
     written: list[Path] = []
     removed: list[Path] = []
-    outputs = render_files(root, include_mcp=include_mcp, skills_only=skills_only)
+    outputs = render_files(source_root, output_root, include_mcp=include_mcp, skills_only=skills_only)
 
     for path, content in outputs.items():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -307,29 +307,29 @@ def write_files(root: Path, *, prune: bool = False, include_mcp: bool = False, s
         written.append(path)
 
     if prune:
-        for path in _stale_generated_files(root, outputs):
+        for path in _stale_generated_files(output_root, outputs):
             path.unlink()
             removed.append(path)
-            _remove_empty_generated_parents(root, path.parent)
+            _remove_empty_generated_parents(output_root, path.parent)
 
     return written, removed
 
 
-def check_files(root: Path, *, prune: bool = False, include_mcp: bool = False, skills_only: bool = False) -> list[Path]:
+def check_files(source_root: Path, output_root: Path, *, prune: bool = False, include_mcp: bool = False, skills_only: bool = False) -> list[Path]:
     stale: list[Path] = []
-    outputs = render_files(root, include_mcp=include_mcp, skills_only=skills_only)
+    outputs = render_files(source_root, output_root, include_mcp=include_mcp, skills_only=skills_only)
 
     for path, content in outputs.items():
         if not path.exists() or path.read_bytes() != content:
             stale.append(path)
     if prune:
-        stale.extend(_stale_generated_files(root, outputs))
+        stale.extend(_stale_generated_files(output_root, outputs))
     return stale
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Sync generated AI-agent adapter files."
+        description="Sync generated AI-agent adapter files from .agents-source."
     )
     parser.add_argument(
         "--check",
@@ -353,29 +353,40 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    root = Path(__file__).resolve().parent
+    # Determine source and output roots
+    cwd = Path.cwd()
+    script_dir = Path(__file__).resolve().parent
+
+    # If .agents-source exists in cwd, use it as source; otherwise use script_dir (self)
+    if (cwd / ".agents-source").exists():
+        source_root = cwd / ".agents-source"
+        output_root = cwd
+    else:
+        source_root = script_dir
+        output_root = script_dir
+
     if args.check:
-        stale = check_files(root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills)
+        stale = check_files(source_root, output_root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills)
         if stale:
             print("Stale generated agent files:")
             for path in stale:
-                print(path.relative_to(root))
+                print(path.relative_to(output_root))
             return 1
         print("Generated agent files are up to date.")
         return 0
 
-    written, removed = write_files(root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills)
+    written, removed = write_files(source_root, output_root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills)
     if not written and not removed:
         print("Generated agent files are already up to date.")
         return 0
     if written:
         print("Updated generated agent files:")
         for path in written:
-            print(path.relative_to(root))
+            print(path.relative_to(output_root))
     if removed:
         print("Removed stale generated agent files:")
         for path in removed:
-            print(path.relative_to(root))
+            print(path.relative_to(output_root))
     return 0
 
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kaggle Fetch Competition"
+  short_description: "Kaggleコンペ公式情報をREADME冒頭へ反映"
+  default_prompt: "Use $kaggle-fetch-competition to fetch current Kaggle competition context and update README."

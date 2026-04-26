@@ -28,7 +28,7 @@ cd .agents-source
 make sync  # スキルのみを同期（既存設定は保護）
 ```
 
-**注：デフォルトではスキルのみ同期されます。MCP 設定は手動でマージしてください。**
+**注：デフォルトではスキルと指示のみ同期されます。MCP 設定は手動でマージしてください。**
 
 ### 方法2: セットアップスクリプトを使う
 
@@ -68,6 +68,32 @@ make sync
 - `.gemini/commands/` — Gemini CLI 用コマンド
 - `.vscode/mcp.json` — VS Code 用 MCP 設定
 - `.cursor/mcp.json` — Cursor 用 MCP 設定
+
+### Sync オプション
+
+`uv run sync_agent_assets.py` または `make` で以下のコマンドを使用できます：
+
+```bash
+# スキル + 指示ファイルを同期（デフォルト）
+make sync
+
+# MCP 設定も含めて同期（⚠️ 既存設定を上書き）
+make sync-mcp
+
+# スキルのみ同期（指示ファイルをスキップ）
+# 既存のカスタマイズを保護したい場合に使用
+make sync-skills
+
+# コマンドライン指定の場合
+uv run sync_agent_assets.py --skills-only
+uv run sync_agent_assets.py --mcp --skills-only
+```
+
+**各オプションの説明:**
+- `--mcp` — MCP サーバー設定（`.cursor/mcp.json`, `.vscode/mcp.json`, `.gemini/settings.json`）も生成します。⚠️ 既存の MCP 設定を上書きします
+- `--skills-only` — 指示ファイル（`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/project-guidelines.mdc`）の生成をスキップします。AGENTS.md から自動生成される指示ファイルをカスタマイズしている場合に使用してください
+- `--check` — 生成ファイルが最新かチェック（デフォルト: 生成）
+- `--prune` — 不要になった生成ファイルを削除
 
 ## 📖 使用例
 

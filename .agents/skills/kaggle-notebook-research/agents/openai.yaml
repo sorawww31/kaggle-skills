@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kaggle Notebook Research"
+  short_description: "公開Kaggle Notebookを派生関係込みで調査"
+  default_prompt: "Use $kaggle-notebook-research to research public notebooks for birdclef-2026 and summarize reusable implementation ideas."

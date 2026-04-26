@@ -1,9 +1,10 @@
 {
   "mcpServers": {
     "kaggle": {
-      "httpUrl": "https://www.kaggle.com/mcp",
+      "url": "https://www.kaggle.com/mcp",
+      "type": "http",
       "headers": {
-        "Authorization": "Bearer ${KAGGLE_API_TOKEN}"
+        "authorization": "Bearer ${KAGGLE_API_TOKEN}"
       }
     }
   }

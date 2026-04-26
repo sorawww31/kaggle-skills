@@ -14,6 +14,7 @@ def test_kaggle_discussion_research_skill_mentions_required_kaggle_mcp_tools() -
     skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
 
     assert "name: kaggle-discussion-research" in skill_text
+    assert "search_competitions" in skill_text
     assert "list_forum_topics" in skill_text
     assert "get_forum_topic" in skill_text
     assert "includeComments=true" in skill_text
@@ -35,6 +36,7 @@ def test_kaggle_discussion_research_skill_collects_topics_broadly_before_search(
     skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
 
     assert "網羅パス" in skill_text
+    assert "stickyなhost thread" in skill_text
     assert 'sortBy="Top"' in skill_text
     assert 'sortBy="Hot"' in skill_text
     assert 'sortBy="Recent"' in skill_text
@@ -42,6 +44,17 @@ def test_kaggle_discussion_research_skill_collects_topics_broadly_before_search(
     assert "votes" in skill_text
     assert "comment_count" in skill_text
     assert "候補一覧" in skill_text
+
+
+def test_kaggle_discussion_research_skill_has_api_quirk_fallbacks() -> None:
+    skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+
+    assert "先頭集合がかなり似ることがある" in skill_text
+    assert '`page=2..N`' in skill_text
+    assert '`author="Admin"`' in skill_text
+    assert "host/admin専用集合を保証しない" in skill_text
+    assert "`forumId`" in skill_text
+    assert "KernelやDatasetが混ざることがある" in skill_text
 
 
 def test_kaggle_discussion_research_skill_filters_low_value_noise() -> None:
@@ -54,6 +67,13 @@ def test_kaggle_discussion_research_skill_filters_low_value_noise() -> None:
     assert "提出失敗ログ" in skill_text
     assert "個人環境の実行エラーのみ" in skill_text
     assert "host回答" in skill_text
+
+
+def test_kaggle_discussion_research_skill_handles_missing_output_dir_and_competition_search_fallback() -> None:
+    skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+
+    assert "ディレクトリが無ければ作成する" in skill_text
+    assert "Competition解決に失敗したら`search_competitions`へ切り替える" in skill_text
 
 
 def test_kaggle_discussion_research_skill_stays_competition_generic() -> None:

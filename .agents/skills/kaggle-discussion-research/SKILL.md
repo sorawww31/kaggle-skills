@@ -24,21 +24,23 @@ Discussion検索はノイズが混ざるため、取得元URL、topic ID、comme
    - 「有用投稿」は検索語だけに頼らず、Top、Hot、Recent、Active、高vote、高コメント数、host/admin投稿、データ不備、ルール、強いbaseline、LB共有、推論高速化を広く見る。
 2. Kaggle MCPツールが未ロードなら、tool discoveryで`search_content`、`list_forum_topics`、`get_forum_topic`、`get_writeup_by_topic`を探す。
 3. `context()` MCPが使える環境なら、Kaggle APIや利用ライブラリの挙動確認に使う。使えない場合は「context MCPは利用不可」と明示し、Kaggle MCPの結果を根拠にする。
-4. 出力先は`docs/discussion/`に限定する。既存ファイルを更新する場合は、先に全文を読んでユーザーの追記を戻さない。
+4. 出力先は`docs/discussion/`に限定する。ディレクトリが無ければ作成する。既存ファイルを更新する場合は、先に全文を読んでユーザーの追記を戻さない。
 
 ## Kaggle MCPで調査する
 
 ### 1. コンペを解決する
 
-1. `search_content`でコンペslugまたは名称を検索する。
+1. まず`search_content`でコンペslugまたは名称を検索する。
    - `documentTypes=["Competition"]`
    - active参加中なら`competitionFilters.status="Active"`も使う。
-2. 採用する候補を`document_type == "COMPETITION"`、slug、title、deadline、team_count、team_rank、joined/bookmarked状態で確認する。
-3. `competition_document`の`id`、`slug`、`enriched_info.url`をメモする。
+2. `search_content`がCompetition以外を返したり、候補が空なら`search_competitions(search="<slug>")`へ切り替える。
+3. 採用する候補を`document_type == "COMPETITION"`、slug、title、deadline、team_count、team_rank、joined/bookmarked状態で確認する。
+4. `competition_document`の`id`、`slug`、`enriched_info.url`をメモする。`search_competitions`を使った場合も、title、url、deadline、team_count、user_rankを同様にメモする。
 
 Kaggle MCP利用時の注意:
 
 - `search_content(documentTypes=["Topic"])`はTopic以外のKernelを返すことがある。Topic候補は必ず`document_type`か`parent_url`で絞る。
+- `search_content(documentTypes=["Competition"])`もCompetition以外を返すことがある。Competition解決に失敗したら`search_competitions`へ切り替える。
 - コンペ固有のforum idやcompetition idは、毎回MCPの検索結果から確認する。
 
 ### 2. Topic候補を網羅的に集める
@@ -51,9 +53,12 @@ Kaggle MCP利用時の注意:
    - 同じ条件で`sortBy="Hot"`、`sortBy="Recent"`、`sortBy="Active"`も見る。
    - `N`は通常2〜3ページを目安にし、topic数が少ないコンペでは全件に近づける。大量コンペでは重複を除いて50〜100件程度を候補上限にする。
    - 終了済みコンペの解法調査では`category="CompetitionWriteUps"`、`sortBy="Top"`、`sortBy="Recent"`も見る。
+   - 実APIでは、`searchQuery="<slug>"`付きだと`sortBy`を変えても先頭集合がかなり似ることがある。その場合は「複数経路を見た」と見なさず、`page=2..N`、`author="Admin"`、`search_content`補助、可能なら`forumId`指定へ広げて差分を作る。
 2. Host/admin確認:
+   - `author="Admin"`はhost/admin専用集合を保証しない。補助探索としてのみ使い、返却後に`author_type`や投稿者名でhost/admin topicだけを再抽出する。
    - `list_forum_topics(category="Competitions", author="Admin", hasSearchQuery=true, searchQuery="<slug>", sortBy="Recent")`を試す。
    - API上のauthor指定でhost投稿が十分拾えない場合は、網羅パス結果の`author_type`、title、tagsからhost/organizer投稿を拾う。
+   - `forumId`がtopic取得結果などから見えているなら、`hasForumId=true`でそのforumに絞った列挙も試す。`get_forum`が権限不足でもtopic本文取得を優先して進める。
 3. 候補表を作る:
    - topic id、title、URL、sortByでの発見元、votes、comment_count、post_date、last_comment_post_date、author_type、author tier/rank、tagsを記録する。
    - 同一topicは1行に統合し、発見元を`Top, Hot, Recent`のように複数残す。
@@ -74,10 +79,11 @@ Kaggle MCP利用時の注意:
    - 音声ならwindow、embedding、SED、sampling rate、推論時間を探す。
    - NLPならtokenizer、sequence length、prompt、retrieval、external corpusを探す。
    - 時系列ならlag、rolling feature、group split、leak、horizonを探す。
+   - 検索語が空振りでも終わらない。特にactive competitionではstickyなhost threadや高コメントtopicの返信に、rule訂正・metadata補足・submission制約が埋もれていることが多いので、host/admin threadをコメント込みで読む。
 6. 解法探索:
    - 検索語を`"1st place solution <slug>"`、`"top solution <slug>"`、`"writeup <slug>"`、`"solution summary <slug>"`で試す。
    - 終了済みコンペでは`category="CompetitionWriteUps"`も試す。
-7. 候補は`parent_url`が対象slugを含むものだけ採用する。検索語に合っても別コンペや一般Forumなら除外する。
+7. `search_content(documentTypes=["Topic"])`はKernelやDatasetが混ざることがある。候補は`document_type == "TOPIC"`かつ`parent_url`または`enriched_info.url`が対象slugを含むものだけ採用する。検索語に合っても別コンペや一般Forumなら除外する。
 
 読むtopic数は依頼の粒度に合わせる。指定がなければ、候補表を作った上で`read`上位10〜20件を本文・コメント込みで読み、`skim`は必要に応じて確認する。
 「網羅的に」「全部見て」に近い依頼なら、候補数、ページ数、未読理由をMarkdownに残し、時間内に読めなかったtopicを未確認に入れる。

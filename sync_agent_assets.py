@@ -253,7 +253,18 @@ def _mcp_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
     return outputs
 
 
-def render_files(source_root: Path, output_root: Path, *, include_mcp: bool = False, skills_only: bool = False) -> dict[Path, bytes]:
+def _resolve_output_root(source_root: Path, output_root: Path | None) -> Path:
+    return source_root if output_root is None else output_root
+
+
+def render_files(
+    source_root: Path,
+    output_root: Path | None = None,
+    *,
+    include_mcp: bool = False,
+    skills_only: bool = False,
+) -> dict[Path, bytes]:
+    output_root = _resolve_output_root(source_root, output_root)
     outputs: dict[Path, bytes] = {}
     if not skills_only:
         outputs.update(_agent_instruction_adapters(source_root, output_root))
@@ -294,7 +305,15 @@ def _remove_empty_generated_parents(root: Path, path: Path) -> None:
         return
 
 
-def write_files(source_root: Path, output_root: Path, *, prune: bool = False, include_mcp: bool = False, skills_only: bool = False) -> tuple[list[Path], list[Path]]:
+def write_files(
+    source_root: Path,
+    output_root: Path | None = None,
+    *,
+    prune: bool = False,
+    include_mcp: bool = False,
+    skills_only: bool = False,
+) -> tuple[list[Path], list[Path]]:
+    output_root = _resolve_output_root(source_root, output_root)
     written: list[Path] = []
     removed: list[Path] = []
     outputs = render_files(source_root, output_root, include_mcp=include_mcp, skills_only=skills_only)
@@ -315,7 +334,15 @@ def write_files(source_root: Path, output_root: Path, *, prune: bool = False, in
     return written, removed
 
 
-def check_files(source_root: Path, output_root: Path, *, prune: bool = False, include_mcp: bool = False, skills_only: bool = False) -> list[Path]:
+def check_files(
+    source_root: Path,
+    output_root: Path | None = None,
+    *,
+    prune: bool = False,
+    include_mcp: bool = False,
+    skills_only: bool = False,
+) -> list[Path]:
+    output_root = _resolve_output_root(source_root, output_root)
     stale: list[Path] = []
     outputs = render_files(source_root, output_root, include_mcp=include_mcp, skills_only=skills_only)
 

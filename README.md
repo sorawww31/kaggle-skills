@@ -8,6 +8,7 @@ Kaggle 向けの AI-agent スキルと MCP サーバー設定を提供します�
 - `new-exp` — 新しい実験ディレクトリの作成
 - `commit` — Git コミット補助
 - `kaggle-fetch-competition` — Kaggle コンペティションデータの取得
+- `kaggle-discussion-research` — Kaggle Discussion とコメントの調査記録
 - `kaggle-to-notion` — Kaggle データを Notion に連携
 - `plan-create` — 実装プラン作成
 - `empirical-prompt-tuning` — プロンプトチューニング
@@ -108,6 +109,12 @@ python .agents-source/sync_agent_assets.py --prune
 
 ```
 /kaggle-fetch-competition competition-name
+```
+
+### Kaggle Discussion の調査
+
+```
+$kaggle-discussion-research <competition-slug> の有用Discussionを docs/discussion にまとめて
 ```
 
 ## 🔗 MCP（Model Context Protocol）サーバー設定

@@ -1,15 +1,65 @@
 #!/usr/bin/env python3
 """
-Quick validation script for skills - minimal version
+quick_validate.py
+Where: skill-creator bundled validation script.
+What: Validates the minimal SKILL.md structure required by Codex skills.
+Why: Catch malformed skills without requiring optional project dependencies.
 """
 
 import re
 import sys
 from pathlib import Path
 
-import yaml
-
 MAX_SKILL_NAME_LENGTH = 64
+
+
+def _strip_yaml_scalar(value):
+    """Parse the simple scalar forms used by skill frontmatter."""
+    value = value.strip()
+    if not value:
+        return ""
+    if (
+        len(value) >= 2
+        and value[0] == value[-1]
+        and value[0] in {'"', "'"}
+    ):
+        return value[1:-1]
+    return value
+
+
+def _parse_frontmatter(frontmatter_text):
+    """Parse top-level YAML keys used by skills without importing PyYAML."""
+    parsed = {}
+    lines = frontmatter_text.splitlines()
+    index = 0
+
+    while index < len(lines):
+        line = lines[index]
+        index += 1
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line[:1].isspace():
+            continue
+
+        match = re.match(r"^([A-Za-z0-9_-]+):(?:\s*(.*))?$", line)
+        if not match:
+            raise ValueError(f"Invalid top-level frontmatter line: {line}")
+
+        key, value = match.groups()
+        value = value or ""
+        if value in {">", "|", ">-", "|-"}:
+            block_lines = []
+            while index < len(lines) and (
+                not lines[index].strip() or lines[index][:1].isspace()
+            ):
+                block_lines.append(lines[index].strip())
+                index += 1
+            parsed[key] = "\n".join(block_lines).strip()
+            continue
+
+        parsed[key] = _strip_yaml_scalar(value)
+
+    return parsed
 
 
 def validate_skill(skill_path):
@@ -31,10 +81,8 @@ def validate_skill(skill_path):
     frontmatter_text = match.group(1)
 
     try:
-        frontmatter = yaml.safe_load(frontmatter_text)
-        if not isinstance(frontmatter, dict):
-            return False, "Frontmatter must be a YAML dictionary"
-    except yaml.YAMLError as e:
+        frontmatter = _parse_frontmatter(frontmatter_text)
+    except ValueError as e:
         return False, f"Invalid YAML in frontmatter: {e}"
 
     allowed_properties = {"name", "description", "license", "allowed-tools", "metadata"}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kaggle Discussion Research"
+  short_description: "Kaggle discussionを調査してMarkdown化"
+  default_prompt: "Use $kaggle-discussion-research to research useful Kaggle discussion topics and summarize them under docs/discussion/."

@@ -10,3 +10,6 @@ wheels/
 .venv
 
 *cache*
+.claude
+.cursor
+.vscode

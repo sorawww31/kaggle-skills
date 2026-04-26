@@ -253,12 +253,13 @@ def _mcp_adapters(root: Path) -> dict[Path, bytes]:
     return outputs
 
 
-def render_files(root: Path) -> dict[Path, bytes]:
+def render_files(root: Path, *, include_mcp: bool = False) -> dict[Path, bytes]:
     outputs: dict[Path, bytes] = {}
     outputs.update(_agent_instruction_adapters(root))
     outputs.update(_command_adapters(root))
     outputs.update(_skill_adapters(root))
-    outputs.update(_mcp_adapters(root))
+    if include_mcp:
+        outputs.update(_mcp_adapters(root))
     return outputs
 
 
@@ -292,10 +293,10 @@ def _remove_empty_generated_parents(root: Path, path: Path) -> None:
         return
 
 
-def write_files(root: Path, *, prune: bool = False) -> tuple[list[Path], list[Path]]:
+def write_files(root: Path, *, prune: bool = False, include_mcp: bool = False) -> tuple[list[Path], list[Path]]:
     written: list[Path] = []
     removed: list[Path] = []
-    outputs = render_files(root)
+    outputs = render_files(root, include_mcp=include_mcp)
 
     for path, content in outputs.items():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -313,9 +314,9 @@ def write_files(root: Path, *, prune: bool = False) -> tuple[list[Path], list[Pa
     return written, removed
 
 
-def check_files(root: Path, *, prune: bool = False) -> list[Path]:
+def check_files(root: Path, *, prune: bool = False, include_mcp: bool = False) -> list[Path]:
     stale: list[Path] = []
-    outputs = render_files(root)
+    outputs = render_files(root, include_mcp=include_mcp)
 
     for path, content in outputs.items():
         if not path.exists() or path.read_bytes() != content:
@@ -339,11 +340,16 @@ def main() -> int:
         action="store_true",
         help="Include generated files whose shared sources no longer exist; remove them during sync.",
     )
+    parser.add_argument(
+        "--mcp",
+        action="store_true",
+        help="Also generate MCP server configs (default: skills only). WARNING: May overwrite existing MCP settings.",
+    )
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parent
     if args.check:
-        stale = check_files(root, prune=args.prune)
+        stale = check_files(root, prune=args.prune, include_mcp=args.mcp)
         if stale:
             print("Stale generated agent files:")
             for path in stale:
@@ -352,7 +358,7 @@ def main() -> int:
         print("Generated agent files are up to date.")
         return 0
 
-    written, removed = write_files(root, prune=args.prune)
+    written, removed = write_files(root, prune=args.prune, include_mcp=args.mcp)
     if not written and not removed:
         print("Generated agent files are already up to date.")
         return 0

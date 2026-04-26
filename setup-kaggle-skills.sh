@@ -24,10 +24,11 @@ else
     git submodule add "$REPO_URL" "$SUBMODULE_PATH"
 fi
 
-echo "🔄 Syncing agent assets..."
+echo "🔄 Syncing agent assets (skills only)..."
 cd "$SUBMODULE_PATH"
 python tools/sync_agent_assets.py
 cd ..
+echo "✅ Skills synced"
 
 echo ""
 echo "⚙️  Setting up .env..."

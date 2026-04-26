@@ -24,10 +24,11 @@ Kaggle 向けの AI-agent スキルと MCP サーバー設定を提供します�
 ```bash
 # リポジトリのルートで実行
 git submodule add https://github.com/kaggle-project/kaggle-skills .agents-source
-cd .agents-source && python tools/sync_agent_assets.py
-# または
-make sync
+cd .agents-source
+make sync  # スキルのみを同期（既存設定は保護）
 ```
+
+**注：デフォルトではスキルのみ同期されます。MCP 設定は手動でマージしてください。**
 
 ### 方法2: セットアップスクリプトを使う
 
@@ -105,6 +106,8 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    ```
 
 2. **既存プロジェクト（MCP 設定がある場合）**
+   
+   **推奨：手動マージ** — 既存設定を保持
    ```bash
    # 既存の .mcp.json に以下を追加
    # {
@@ -119,6 +122,19 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    #   }
    # }
    ```
+   
+   **または自動生成** — 既存設定を上書きする ⚠️
+   ```bash
+   cd .agents-source
+   make sync-mcp  # スキル + MCP を生成
+   ```
+   
+   ⚠️ **警告: `make sync-mcp` は以下のファイルを上書きします：**
+   - `.cursor/mcp.json`
+   - `.vscode/mcp.json`
+   - `.gemini/settings.json`
+   
+   **既存の MCP 設定がある場合は、必ず手動マージを使用してください。**
 
 3. **認証情報の設定**
    ```bash
@@ -142,10 +158,26 @@ Submodule で追加した場合、最新版に更新：
 
 ```bash
 git submodule update --remote .agents-source
-make sync
+cd .agents-source
+make sync  # スキルのみ更新
 ```
 
-MCP 設定を更新する場合は、`.agents/mcp/` の変更を確認して、自分のプロジェクトにマージしてください。
+### MCP 設定を更新する場合
+
+```bash
+# 手動マージ（推奨）
+# .agents/mcp/ の変更を確認して、自分のプロジェクトにマージ
+
+# または自動更新（既存設定を上書き） ⚠️
+cd .agents-source
+make sync-mcp  # 警告: 既存の .cursor/mcp.json, .vscode/mcp.json を上書きします
+```
+
+### 将来の改善
+
+現在、MCP 設定の自動マージには対応していません。以下の機能を計画中：
+- 既存 MCP サーバー設定を保持しながら、新しいサーバーを追加する自動マージ
+- 複数の MCP サーバー管理の簡素化
 
 ## 📝 ライセンス
 

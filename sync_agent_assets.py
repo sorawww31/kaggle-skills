@@ -344,10 +344,10 @@ def main() -> int:
     parser.add_argument(
         "--mcp",
         action="store_true",
-        help="Also generate MCP server configs (default: skills only). WARNING: May overwrite existing MCP settings.",
+        help="Include MCP server configs in sync. WARNING: May overwrite existing MCP settings.",
     )
     parser.add_argument(
-        "--skills-only",
+        "--skills",
         action="store_true",
         help="Sync skills only; skip instruction adapters (CLAUDE.md, GEMINI.md, etc.).",
     )
@@ -355,7 +355,7 @@ def main() -> int:
 
     root = Path(__file__).resolve().parent
     if args.check:
-        stale = check_files(root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills_only)
+        stale = check_files(root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills)
         if stale:
             print("Stale generated agent files:")
             for path in stale:
@@ -364,7 +364,7 @@ def main() -> int:
         print("Generated agent files are up to date.")
         return 0
 
-    written, removed = write_files(root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills_only)
+    written, removed = write_files(root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills)
     if not written and not removed:
         print("Generated agent files are already up to date.")
         return 0

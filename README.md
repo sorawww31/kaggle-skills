@@ -23,12 +23,14 @@ Kaggle 向けの AI-agent スキルと MCP サーバー設定を提供します�
 
 ```bash
 # リポジトリのルートで実行
-git submodule add https://github.com/kaggle-project/kaggle-skills .agents-source
-cd .agents-source
-make sync  # スキルのみを同期（既存設定は保護）
+git submodule add https://github.com/sorawww31/kaggle-skills.git .agents-source
+
+# 親リポジトリのルートで sync を実行
+python .agents-source/sync_agent_assets.py
 ```
 
-**注：デフォルトではスキルと指示のみ同期されます。MCP 設定は手動でマージしてください。**
+**注：**
+- デフォルトではスキルと指示のみ同期されます。MCP 設定は手動でマージしてください。
 
 ### 方法2: セットアップスクリプトを使う
 
@@ -59,40 +61,38 @@ cp .env.example .env
 ### 2. Sync を実行（Submodule の場合）
 
 ```bash
-make sync
+# 親リポジトリのルートで実行
+python .agents-source/sync_agent_assets.py
 ```
 
 これで以下が自動生成されます：
 - `.claude/skills/` — Claude Code 用スキル
 - `.cursor/commands/` — Cursor 用コマンド
 - `.gemini/commands/` — Gemini CLI 用コマンド
-- `.vscode/mcp.json` — VS Code 用 MCP 設定
-- `.cursor/mcp.json` — Cursor 用 MCP 設定
 
 ### Sync オプション
 
-`uv run sync_agent_assets.py` または `make` で以下のコマンドを使用できます：
-
 ```bash
 # スキル + 指示ファイルを同期（デフォルト）
-make sync
+python .agents-source/sync_agent_assets.py
 
 # MCP 設定も含めて同期（⚠️ 既存設定を上書き）
-make sync-mcp
+python .agents-source/sync_agent_assets.py --mcp
 
 # スキルのみ同期（指示ファイルをスキップ）
-# 既存のカスタマイズを保護したい場合に使用
-make sync-skills
+python .agents-source/sync_agent_assets.py --skills
 
-# コマンドライン指定の場合
-uv run sync_agent_assets.py --skills-only
-uv run sync_agent_assets.py --mcp --skills-only
+# チェック（生成ファイルが最新か確認）
+python .agents-source/sync_agent_assets.py --check
+
+# 不要なファイルを削除
+python .agents-source/sync_agent_assets.py --prune
 ```
 
 **各オプションの説明:**
 - `--mcp` — MCP サーバー設定（`.cursor/mcp.json`, `.vscode/mcp.json`, `.gemini/settings.json`）も生成します。⚠️ 既存の MCP 設定を上書きします
-- `--skills-only` — 指示ファイル（`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/project-guidelines.mdc`）の生成をスキップします。AGENTS.md から自動生成される指示ファイルをカスタマイズしている場合に使用してください
-- `--check` — 生成ファイルが最新かチェック（デフォルト: 生成）
+- `--skills` — 指示ファイル（`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/project-guidelines.mdc`）の生成をスキップ。AGENTS.md から自動生成される指示ファイルをカスタマイズしている場合に使用
+- `--check` — 生成ファイルが最新かチェック（修正は行わない）
 - `--prune` — 不要になった生成ファイルを削除
 
 ## 📖 使用例
@@ -126,9 +126,8 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
 
 1. **新規プロジェクト（MCP 設定がない場合）**
    ```bash
-   cp .agents-source/.agents/mcp/.mcp.json ./mcp.json
-   # Codex の場合
-   cat .agents-source/.agents/mcp/config.toml >> ~/.config/codex/config.toml
+   # 親リポジトリのルートで実行
+   python .agents-source/sync_agent_assets.py --mcp
    ```
 
 2. **既存プロジェクト（MCP 設定がある場合）**
@@ -225,19 +224,19 @@ Submodule で追加した場合、最新版に更新：
 
 ```bash
 git submodule update --remote .agents-source
-cd .agents-source
-make sync  # スキルのみ更新
+
+# 親リポジトリのルートで実行
+python .agents-source/sync_agent_assets.py
 ```
 
 ### MCP 設定を更新する場合
 
 ```bash
 # 手動マージ（推奨）
-# .agents/mcp/ の変更を確認して、自分のプロジェクトにマージ
+# .agents-source/.agents/mcp/ の変更を確認して、自分のプロジェクトにマージ
 
 # または自動更新（既存設定を上書き） ⚠️
-cd .agents-source
-make sync-mcp  # 警告: 既存の .cursor/mcp.json, .vscode/mcp.json を上書きします
+python .agents-source/sync_agent_assets.py --mcp
 ```
 
 ### 将来の改善

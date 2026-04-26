@@ -108,19 +108,60 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
 2. **既存プロジェクト（MCP 設定がある場合）**
    
    **推奨：手動マージ** — 既存設定を保持
-   ```bash
-   # 既存の .mcp.json に以下を追加
-   # {
-   #   "mcpServers": {
-   #     "kaggle": {
-   #       "type": "http",
-   #       "url": "https://www.kaggle.com/mcp",
-   #       "headers": {
-   #         "Authorization": "Bearer ${KAGGLE_API_TOKEN}"
-   #       }
-   #     }
-   #   }
-   # }
+   
+   以下の設定を既存ファイルにマージしてください：
+   
+   **Claude Code / Cursor** — `.mcp.json`
+   ```json
+   {
+     "mcpServers": {
+       "kaggle": {
+         "type": "http",
+         "url": "https://www.kaggle.com/mcp",
+         "headers": {
+           "Authorization": "Bearer ${KAGGLE_API_TOKEN}"
+         }
+       }
+     }
+   }
+   ```
+   
+   **VS Code** — `.vscode/mcp.json`
+   ```json
+   {
+     "servers": {
+       "kaggle": {
+         "url": "https://www.kaggle.com/mcp",
+         "type": "http",
+         "headers": {
+           "authorization": "Bearer ${KAGGLE_API_TOKEN}"
+         }
+       }
+     }
+   }
+   ```
+   
+   **Gemini CLI** — `~/.config/gemini/settings.json`
+   ```json
+   {
+     "mcpServers": {
+       "kaggle": {
+         "type": "http",
+         "httpUrl": "https://www.kaggle.com/mcp",
+         "headers": {
+           "Authorization": "Bearer ${KAGGLE_API_TOKEN}"
+         }
+       }
+     }
+   }
+   ```
+   
+   **Codex** — `~/.config/codex/config.toml`
+   ```toml
+   [mcp_servers.kaggle]
+   url = "https://www.kaggle.com/mcp"
+   bearer_token_env_var = "KAGGLE_API_TOKEN"
+   enabled = true
    ```
    
    **または自動生成** — 既存設定を上書きする ⚠️

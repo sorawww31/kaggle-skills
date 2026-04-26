@@ -187,10 +187,12 @@ def _mcp_adapters(root: Path) -> dict[Path, bytes]:
 
     outputs: dict[Path, bytes] = {}
 
-    # Cursor: url + headers
+    # Cursor: type + url + headers
     cursor_servers = {}
     for name, config in servers.items():
         cfg: dict = {}
+        if "type" in config:
+            cfg["type"] = config["type"]
         if "url" in config:
             cfg["url"] = config["url"]
         if "headers" in config:
@@ -202,14 +204,18 @@ def _mcp_adapters(root: Path) -> dict[Path, bytes]:
             json.dumps({"mcpServers": cursor_servers}, indent=2) + "\n"
         )
 
-    # Gemini CLI: url + type + headers
+    # Gemini CLI: httpUrl + type + headers
     gemini_servers = {}
     for name, config in servers.items():
         cfg = {}
+        server_type = config.get("type")
+        if server_type:
+            cfg["type"] = server_type
         if "url" in config:
-            cfg["url"] = config["url"]
-        if "type" in config:
-            cfg["type"] = config["type"]
+            if server_type == "http":
+                cfg["httpUrl"] = config["url"]
+            else:
+                cfg["url"] = config["url"]
         if "headers" in config:
             # Lowercase header keys for Gemini compatibility
             cfg["headers"] = {k.lower(): v for k, v in config["headers"].items()}

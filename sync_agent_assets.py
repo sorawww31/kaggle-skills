@@ -242,8 +242,7 @@ def _mcp_adapters(root: Path) -> dict[Path, bytes]:
             else:
                 cfg["url"] = config["url"]
         if "headers" in config:
-            # Lowercase header keys for Gemini compatibility
-            cfg["headers"] = {k.lower(): v for k, v in config["headers"].items()}
+            cfg["headers"] = dict(config["headers"])
         if cfg:
             gemini_servers[name] = cfg
     if gemini_servers:

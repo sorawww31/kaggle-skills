@@ -203,6 +203,31 @@ def _mcp_adapters(root: Path) -> dict[Path, bytes]:
         outputs[root / ".cursor" / "mcp.json"] = _to_bytes(
             json.dumps({"mcpServers": cursor_servers}, indent=2) + "\n"
         )
+        outputs[root / ".vscode" / "mcp.json"] = _to_bytes(
+            json.dumps(
+                {
+                    "servers": {
+                        name: {
+                            **({"url": cfg["url"]} if "url" in cfg else {}),
+                            **({"type": cfg["type"]} if "type" in cfg else {}),
+                            **(
+                                {
+                                    "headers": {
+                                        key.lower(): value
+                                        for key, value in cfg["headers"].items()
+                                    }
+                                }
+                                if "headers" in cfg
+                                else {}
+                            ),
+                        }
+                        for name, cfg in cursor_servers.items()
+                    }
+                },
+                indent=2,
+            )
+            + "\n"
+        )
 
     # Gemini CLI: httpUrl + type + headers
     gemini_servers = {}

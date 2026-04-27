@@ -114,7 +114,7 @@ python .agents-source/sync_agent_assets.py --prune
 ### Kaggle Discussion の調査
 
 ```
-$kaggle-discussion-research <competition-slug> の有用Discussionを docs/discussion にまとめて
+/kaggle-discussion-research <competition-slug> の有用Discussionを docs/discussion にまとめて
 ```
 
 ## 🔗 MCP（Model Context Protocol）サーバー設定
@@ -139,11 +139,11 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
 
 2. **既存プロジェクト（MCP 設定がある場合）**
    
-   **推奨：手動マージ** — 既存設定を保持
+   **推奨：手動マージ** — 既存設定を保持しつつ、設定ファイルに付け足す
    
    以下の設定を既存ファイルにマージしてください：
    
-   **Claude Code / Cursor** — `.mcp.json`
+   **Claude Code / Cursor** — `./.mcp.json`
    ```json
    {
      "mcpServers": {
@@ -158,7 +158,7 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    }
    ```
    
-   **VS Code** — `.vscode/mcp.json`
+   **VS Code** — `./.vscode/mcp.json`
    ```json
    {
      "servers": {
@@ -173,7 +173,7 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    }
    ```
    
-   **Gemini CLI** — `~/.config/gemini/settings.json`
+   **Gemini CLI** — `./.config/gemini/settings.json`
    ```json
    {
      "mcpServers": {
@@ -188,7 +188,7 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    }
    ```
    
-   **Codex** — `~/.config/codex/config.toml`
+   **Codex** — `./.config/codex/config.toml`
    ```toml
    [mcp_servers.kaggle]
    url = "https://www.kaggle.com/mcp"

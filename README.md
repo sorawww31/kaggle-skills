@@ -26,12 +26,20 @@ Kaggle 向けの AI-agent スキルと MCP サーバー設定を提供します�
 # リポジトリのルートで実行
 git submodule add https://github.com/sorawww31/kaggle-skills.git .agents-source
 
-# 親リポジトリのルートで sync を実行
+# 親リポジトリのルートで一括導入
 python .agents-source/sync_agent_assets.py
 ```
 
-**注：**
-- デフォルトではスキルと指示のみ同期されます。MCP 設定は手動でマージしてください。
+この 1 コマンドで以下を同期します：
+- `./.agents/skills/` に共有スキルをコピー
+- `./.codex/skills/` にも同じ共有スキルをコピー
+- `./sync_agent_assets.py` を配置
+- `./.mcp.json` に Kaggle MCP 設定を追加
+- `./.codex/config.toml` に Kaggle Codex 設定を追加
+- `.claude/`, `.cursor/`, `.gemini/`, `.github/` 向け生成ファイルを更新
+
+既存の `.mcp.json` は他サーバーを残したまま `kaggle` を追加します。既存の `.codex/config.toml` にすでに `[mcp_servers.kaggle]` がある場合は上書きせず、その旨を表示します。
+プロジェクトルートに `AGENTS.md` がある場合、`CLAUDE.md` などの指示ファイルは `.agents-source/AGENTS.md` ではなく、その `AGENTS.md` から生成します。
 
 ### 方法2: セットアップスクリプトを使う
 
@@ -40,11 +48,6 @@ bash <(curl -fsSL https://raw.githubusercontent.com/kaggle-project/kaggle-skills
 ```
 
 ## ⚙️ セットアップ
-
-
-# Environment variables
-.env
-```
 
 ### 1. Kaggle API トークンを設定
 
@@ -67,6 +70,11 @@ python .agents-source/sync_agent_assets.py
 ```
 
 これで以下が自動生成されます：
+- `./.agents/skills/` — Codex 用の共有スキル
+- `./.codex/skills/` — Codex ローカル設定配下にも置く共有スキル
+- `./sync_agent_assets.py` — 以後の更新用スクリプト
+- `./.mcp.json` — Claude Code / Cursor 向け Kaggle MCP 設定
+- `./.codex/config.toml` — Codex 向け Kaggle MCP 設定
 - `.claude/skills/` — Claude Code 用スキル
 - `.cursor/commands/` — Cursor 用コマンド
 - `.gemini/commands/` — Gemini CLI 用コマンド
@@ -92,7 +100,7 @@ python .agents-source/sync_agent_assets.py --prune
 
 **各オプションの説明:**
 - `--mcp` — MCP サーバー設定（`.cursor/mcp.json`, `.vscode/mcp.json`, `.gemini/settings.json`）も生成します。⚠️ 既存の MCP 設定を上書きします
-- `--skills` — 指示ファイル（`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/project-guidelines.mdc`）の生成をスキップ。AGENTS.md から自動生成される指示ファイルをカスタマイズしている場合に使用
+- `--skills` — 指示ファイル（`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/project-guidelines.mdc`）の生成をスキップ。プロジェクト側 `AGENTS.md` からの自動生成を止めたい場合に使用
 - `--check` — 生成ファイルが最新かチェック（修正は行わない）
 - `--prune` — 不要になった生成ファイルを削除
 
@@ -138,12 +146,11 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    ```
 
 2. **既存プロジェクト（MCP 設定がある場合）**
+   ルートの `.mcp.json` は自動マージされます。Codex の `./.codex/config.toml` は、`[mcp_servers.kaggle]` が未定義なら自動追加されます。
+
+   `--mcp` は、そのマージ後のルート `.mcp.json` を元に、以下の生成ファイルも更新します：
    
-   **推奨：手動マージ** — 既存設定を保持
-   
-   以下の設定を既存ファイルにマージしてください：
-   
-   **Claude Code / Cursor** — `.mcp.json`
+   **Claude Code / Cursor** — `.cursor/mcp.json`
    ```json
    {
      "mcpServers": {
@@ -173,7 +180,7 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    }
    ```
    
-   **Gemini CLI** — `~/.config/gemini/settings.json`
+   **Gemini CLI** — `.gemini/settings.json`
    ```json
    {
      "mcpServers": {
@@ -188,26 +195,18 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    }
    ```
    
-   **Codex** — `~/.config/codex/config.toml`
+   **Codex** — `./.codex/config.toml`
    ```toml
    [mcp_servers.kaggle]
    url = "https://www.kaggle.com/mcp"
    bearer_token_env_var = "KAGGLE_API_TOKEN"
    enabled = true
    ```
-   
-   **または自動生成** — 既存設定を上書きする ⚠️
-   ```bash
-   cd .agents-source
-   make sync-mcp  # スキル + MCP を生成
-   ```
-   
-   ⚠️ **警告: `make sync-mcp` は以下のファイルを上書きします：**
+
+   ⚠️ `--mcp` は以下の生成ファイルを上書きします：
    - `.cursor/mcp.json`
    - `.vscode/mcp.json`
    - `.gemini/settings.json`
-   
-   **既存の MCP 設定がある場合は、必ず手動マージを使用してください。**
 
 3. **認証情報の設定**
    ```bash
@@ -239,18 +238,12 @@ python .agents-source/sync_agent_assets.py
 ### MCP 設定を更新する場合
 
 ```bash
-# 手動マージ（推奨）
-# .agents-source/.agents/mcp/ の変更を確認して、自分のプロジェクトにマージ
+# ルートの .mcp.json / .codex/config.toml / .agents/skills / .codex/skills を更新
+python .agents-source/sync_agent_assets.py
 
-# または自動更新（既存設定を上書き） ⚠️
+# 生成先の MCP ファイル (.cursor/.vscode/.gemini) も更新する場合
 python .agents-source/sync_agent_assets.py --mcp
 ```
-
-### 将来の改善
-
-現在、MCP 設定の自動マージには対応していません。以下の機能を計画中：
-- 既存 MCP サーバー設定を保持しながら、新しいサーバーを追加する自動マージ
-- 複数の MCP サーバー管理の簡素化
 
 ## 📝 ライセンス
 

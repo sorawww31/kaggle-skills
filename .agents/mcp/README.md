@@ -29,7 +29,13 @@ KAGGLE_API_TOKEN=your-kaggle-api-token
 
 ### Claude Code / VS Code / Cursor
 
-`.mcp.json` をプロジェクトルートにコピーしてください：
+通常は、親リポジトリのルートで以下を実行すれば十分です：
+
+```bash
+python .agents-source/sync_agent_assets.py
+```
+
+このコマンドが `.mcp.json` を自動更新します。さらに `--mcp` を付けると、そのマージ後の `.mcp.json` を元に `.cursor/mcp.json`、`.vscode/mcp.json`、`.gemini/settings.json` も生成します。手動で反映したい場合は、以下の内容をプロジェクトルートにコピーしてください：
 
 ```bash
 cp .agents-source/.agents/mcp/.mcp.json ./mcp.json
@@ -54,7 +60,7 @@ cp .agents-source/.agents/mcp/.mcp.json ./mcp.json
 
 ### Codex
 
-`config.toml` をマージしてください：
+通常は `python .agents-source/sync_agent_assets.py` が `./.codex/config.toml` へ Kaggle 設定を追加します。手動で反映する場合は、以下をマージしてください：
 
 ```toml
 [mcp_servers.kaggle]

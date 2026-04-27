@@ -24,11 +24,9 @@ else
     git submodule add "$REPO_URL" "$SUBMODULE_PATH"
 fi
 
-echo "🔄 Syncing agent assets (skills only)..."
-cd "$SUBMODULE_PATH"
-python tools/sync_agent_assets.py
-cd ..
-echo "✅ Skills synced"
+echo "🔄 Syncing agent assets..."
+python "$SUBMODULE_PATH/sync_agent_assets.py"
+echo "✅ Agent assets synced"
 
 echo ""
 echo "⚙️  Setting up .env..."
@@ -50,10 +48,7 @@ echo "✨ Setup complete!"
 echo ""
 echo "Next steps:"
 echo "  1. Edit .env and add your KAGGLE_API_TOKEN"
-echo "  2. Setup MCP (Model Context Protocol):"
-echo "     - Read: .agents-source/.agents/mcp/README.md"
-echo "     - New project: cp .agents-source/.agents/mcp/.mcp.json ./mcp.json"
-echo "     - Existing project: merge kaggle MCP into your .mcp.json"
-echo "  3. Run 'make sync' to update agent assets anytime"
+echo "  2. If you already had local MCP/Codex settings, review .mcp.json and .codex/config.toml"
+echo "  3. Run 'python sync_agent_assets.py' to update local assets anytime"
 echo "  4. Check README.md for usage examples"
 echo ""

@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import tomllib
 
 
 GENERATED_NOTE = (
@@ -69,8 +70,21 @@ def _toml_multiline(value: str) -> str:
     return f'"""\n{escaped.rstrip()}\n"""'
 
 
+def _resolve_instruction_root(source_root: Path, output_root: Path) -> Path:
+    if (output_root / "AGENTS.md").exists():
+        return output_root
+    return source_root
+
+
+def _resolve_mcp_root(source_root: Path, output_root: Path) -> Path:
+    if (output_root / ".mcp.json").exists():
+        return output_root
+    return source_root
+
+
 def _agent_instruction_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
-    body = _strip_leading_html_comment(_read_text(source_root / "AGENTS.md"))
+    instruction_root = _resolve_instruction_root(source_root, output_root)
+    body = _strip_leading_html_comment(_read_text(instruction_root / "AGENTS.md"))
     return {
         output_root / "CLAUDE.md": _to_bytes(
             _markdown_header(
@@ -176,8 +190,8 @@ def _skill_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
 
 
 def _mcp_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
-    """Generate MCP server configs for each agent from .mcp.json (with auth)."""
-    source = source_root / ".mcp.json"
+    """Generate MCP server configs from the effective project .mcp.json."""
+    source = _resolve_mcp_root(source_root, output_root) / ".mcp.json"
     if not source.exists():
         return {}
     data = json.loads(_read_text(source))
@@ -251,6 +265,118 @@ def _mcp_adapters(source_root: Path, output_root: Path) -> dict[Path, bytes]:
         )
 
     return outputs
+
+
+def _project_skill_files(source_root: Path, output_root: Path) -> dict[Path, bytes]:
+    outputs: dict[Path, bytes] = {}
+    skills_root = source_root / ".agents" / "skills"
+    if not skills_root.exists():
+        return outputs
+
+    for source in sorted(skills_root.rglob("*")):
+        if source.is_dir():
+            continue
+        relative_path = source.relative_to(skills_root)
+        outputs[output_root / ".agents" / "skills" / relative_path] = source.read_bytes()
+        outputs[output_root / ".codex" / "skills" / relative_path] = source.read_bytes()
+    return outputs
+
+
+def _project_script_files(source_root: Path, output_root: Path) -> dict[Path, bytes]:
+    script_path = source_root / "sync_agent_assets.py"
+    if not script_path.exists():
+        return {}
+    return {output_root / "sync_agent_assets.py": script_path.read_bytes()}
+
+
+def _merge_project_mcp(source_root: Path, output_root: Path) -> bytes | None:
+    source = source_root / ".mcp.json"
+    if not source.exists():
+        return None
+
+    source_data = json.loads(_read_text(source))
+    output = output_root / ".mcp.json"
+    if output.exists():
+        merged = json.loads(_read_text(output))
+    else:
+        merged = {}
+
+    merged["mcpServers"] = {
+        **merged.get("mcpServers", {}),
+        **source_data.get("mcpServers", {}),
+    }
+    return _to_bytes(json.dumps(merged, indent=2) + "\n")
+
+
+def _merge_project_codex_config(source_root: Path, output_root: Path) -> tuple[bytes | None, str | None]:
+    source = source_root / ".codex" / "config.toml"
+    if not source.exists():
+        return None, None
+
+    source_text = _read_text(source).strip()
+    output = output_root / ".codex" / "config.toml"
+    if not output.exists():
+        return _to_bytes(source_text + "\n"), None
+
+    output_text = _read_text(output)
+    source_data = tomllib.loads(source_text)
+    output_data = tomllib.loads(output_text)
+    source_kaggle = source_data.get("mcp_servers", {}).get("kaggle")
+    output_kaggle = output_data.get("mcp_servers", {}).get("kaggle")
+
+    if output_kaggle == source_kaggle:
+        return _to_bytes(output_text), None
+    if output_kaggle is None:
+        merged_text = output_text.rstrip() + "\n\n" + source_text + "\n"
+        return _to_bytes(merged_text), None
+    return None, "Skipped .codex/config.toml because [mcp_servers.kaggle] already exists."
+
+
+def install_project_files(
+    source_root: Path,
+    output_root: Path,
+) -> tuple[list[Path], list[str]]:
+    written: list[Path] = []
+    notes: list[str] = []
+
+    for path, content in _project_skill_files(source_root, output_root).items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists() and path.read_bytes() == content:
+            continue
+        path.write_bytes(content)
+        written.append(path)
+
+    for path, content in _project_script_files(source_root, output_root).items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists() and path.read_bytes() != content:
+            notes.append(
+                "Skipped sync_agent_assets.py because the destination already has local changes."
+            )
+            continue
+        if path.exists() and path.read_bytes() == content:
+            continue
+        path.write_bytes(content)
+        written.append(path)
+
+    mcp_content = _merge_project_mcp(source_root, output_root)
+    if mcp_content is not None:
+        mcp_path = output_root / ".mcp.json"
+        mcp_path.parent.mkdir(parents=True, exist_ok=True)
+        if not mcp_path.exists() or mcp_path.read_bytes() != mcp_content:
+            mcp_path.write_bytes(mcp_content)
+            written.append(mcp_path)
+
+    codex_content, codex_note = _merge_project_codex_config(source_root, output_root)
+    if codex_note is not None:
+        notes.append(codex_note)
+    if codex_content is not None:
+        codex_path = output_root / ".codex" / "config.toml"
+        codex_path.parent.mkdir(parents=True, exist_ok=True)
+        if not codex_path.exists() or codex_path.read_bytes() != codex_content:
+            codex_path.write_bytes(codex_content)
+            written.append(codex_path)
+
+    return written, notes
 
 
 def _resolve_output_root(source_root: Path, output_root: Path | None) -> Path:
@@ -402,10 +528,19 @@ def main() -> int:
         print("Generated agent files are up to date.")
         return 0
 
+    installed: list[Path] = []
+    notes: list[str] = []
+    if source_root != output_root:
+        installed, notes = install_project_files(source_root, output_root)
+
     written, removed = write_files(source_root, output_root, prune=args.prune, include_mcp=args.mcp, skills_only=args.skills)
-    if not written and not removed:
+    if not installed and not written and not removed and not notes:
         print("Generated agent files are already up to date.")
         return 0
+    if installed:
+        print("Installed project files:")
+        for path in installed:
+            print(path.relative_to(output_root))
     if written:
         print("Updated generated agent files:")
         for path in written:
@@ -414,6 +549,10 @@ def main() -> int:
         print("Removed stale generated agent files:")
         for path in removed:
             print(path.relative_to(output_root))
+    if notes:
+        print("Notes:")
+        for note in notes:
+            print(note)
     return 0
 
 

@@ -122,7 +122,7 @@ python .agents-source/sync_agent_assets.py --prune
 ### Kaggle Discussion の調査
 
 ```
-$kaggle-discussion-research <competition-slug> の有用Discussionを docs/discussion にまとめて
+/kaggle-discussion-research <competition-slug> の有用Discussionを docs/discussion にまとめて
 ```
 
 ## 🔗 MCP（Model Context Protocol）サーバー設定
@@ -165,7 +165,7 @@ MCP は、Claude や Cursor などの AI エディタが、外部 API（Kaggle �
    }
    ```
    
-   **VS Code** — `.vscode/mcp.json`
+   **VS Code** — `./.vscode/mcp.json`
    ```json
    {
      "servers": {

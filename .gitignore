@@ -13,4 +13,3 @@ wheels/
 
 # EXCEPTION: Keep .agents/mcp/* and .codex/ - these are source templates
 !.agents/mcp/
-.codex/

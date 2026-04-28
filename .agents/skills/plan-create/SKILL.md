@@ -37,7 +37,7 @@ Why: Keep agent implementation plans concrete, reviewable, and grounded in verif
 ## 出力先
 
 - ユーザーがパスを指定した場合は、そのパスに設計書を書く。
-- ユーザーがファイル作成を求めたがパス未指定の場合は、`.agents/docs/plans/<YYYYMMDD>-<short-slug>-design.md` に書く。
+- ユーザーがファイル作成を求めたがパス未指定の場合は、`./docs/plans/<YYYYMMDD>-<short-slug>-design.md` に書く。
 - ユーザーが会話上の計画だけを求めた場合は、Markdown で返す。
 
 ## 設計書の品質基準

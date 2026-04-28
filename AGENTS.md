@@ -34,7 +34,6 @@ Motto: "Small, clear, safe steps in Japanese - always grounded in real docs."
 
 ## Project Conventions
 
-- Keep Python modules single-purpose and aim for files under 300 LOC.
 - Add a brief file header to new source or docs files explaining where, what, and why.
 - Prefer clear comments for assumptions, rationale, and non-obvious logic.
 - Centralize tuneable runtimes in `config.py`; avoid magic numbers in code and tests.

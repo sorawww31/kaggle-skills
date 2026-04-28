@@ -308,9 +308,18 @@ def _merge_project_mcp(source_root: Path, output_root: Path) -> bytes | None:
     return _to_bytes(json.dumps(merged, indent=2) + "\n")
 
 
+def _resolve_codex_config_source(source_root: Path) -> Path | None:
+    """Find the shared Codex MCP config template."""
+    for relative_path in (".codex/config.toml", ".agents/mcp/config.toml"):
+        candidate = source_root / relative_path
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def _merge_project_codex_config(source_root: Path, output_root: Path) -> tuple[bytes | None, str | None]:
-    source = source_root / ".codex" / "config.toml"
-    if not source.exists():
+    source = _resolve_codex_config_source(source_root)
+    if source is None:
         return None, None
 
     source_text = _read_text(source).strip()

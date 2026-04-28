@@ -179,6 +179,31 @@ def test_install_project_files_copies_skills_and_bootstrap_files(tmp_path: Path)
     )["mcp_servers"]["kaggle"]["url"] == KAGGLE_MCP_URL
 
 
+def test_install_project_files_uses_mcp_codex_template(tmp_path: Path) -> None:
+    source_root = tmp_path / ".agents-source"
+    source_root.mkdir()
+
+    codex_template_dir = source_root / ".agents" / "mcp"
+    codex_template_dir.mkdir(parents=True)
+    (codex_template_dir / "config.toml").write_text(
+        '[mcp_servers.kaggle]\n'
+        'url = "https://www.kaggle.com/mcp"\n'
+        'bearer_token_env_var = "KAGGLE_API_TOKEN"\n'
+        "enabled = true\n",
+        encoding="utf-8",
+    )
+
+    written, notes = sync_agent_assets.install_project_files(source_root, tmp_path)
+
+    assert not notes
+    assert tmp_path / ".codex" / "config.toml" in written
+    generated = tomllib.loads(
+        (tmp_path / ".codex" / "config.toml").read_text(encoding="utf-8")
+    )
+    assert generated["mcp_servers"]["kaggle"]["url"] == KAGGLE_MCP_URL
+    assert generated["mcp_servers"]["kaggle"]["bearer_token_env_var"] == "KAGGLE_API_TOKEN"
+
+
 def test_install_project_files_merges_existing_configs(tmp_path: Path) -> None:
     source_root = tmp_path / ".agents-source"
     source_root.mkdir()

@@ -38,6 +38,7 @@ python .agents-source/sync_agent_assets.py
 - `./.codex/config.toml` に Kaggle Codex 設定を追加
 - `.claude/`, `.cursor/`, `.gemini/`, `.github/` 向け生成ファイルを更新
 
+Codex 設定は共有テンプレート `.agents-source/.agents/mcp/config.toml`（互換パス: `.agents-source/.codex/config.toml`）から生成されます。
 既存の `.mcp.json` は他サーバーを残したまま `kaggle` を追加します。既存の `.codex/config.toml` にすでに `[mcp_servers.kaggle]` がある場合は上書きせず、その旨を表示します。
 プロジェクトルートに `AGENTS.md` がある場合、`CLAUDE.md` などの指示ファイルは `.agents-source/AGENTS.md` ではなく、その `AGENTS.md` から生成します。
 
